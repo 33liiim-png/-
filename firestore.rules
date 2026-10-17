@@ -1,0 +1,136 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isUser(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        request.auth.token.email == '33liiim@gmail.com' &&
+        request.auth.token.email_verified == true;
+    }
+
+    function isApprovedUser() {
+      return isSignedIn() && (
+        isAdmin() ||
+        (
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'approved'
+        )
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128;
+    }
+
+    // Note: in Firestore rules .size() on strings counts UTF-8 bytes.
+    // Arabic multi-byte chars require up to 100 bytes for 20 chars.
+    function isValidUsernameStr(name) {
+      return name is string && name.size() >= 3 && name.size() <= 100;
+    }
+
+    function isValidUserDoc(data) {
+      return data.keys().hasAll(['id', 'email', 'username', 'status', 'role', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'email', 'username', 'status', 'role', 'avatarUrl', 'createdAt', 'updatedAt']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.email is string && data.email.size() <= 256 &&
+        isValidUsernameStr(data.username) &&
+        data.status in ['none', 'pending', 'approved', 'rejected'] &&
+        data.role in ['admin', 'member'] &&
+        (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 250000));
+    }
+
+    function isValidMessageDoc(data) {
+      return data.keys().hasAll(['id', 'authorId', 'authorUsername', 'authorEmail', 'text', 'createdAt', 'expireAt']) &&
+        data.keys().hasOnly(['id', 'authorId', 'authorUsername', 'authorEmail', 'authorAvatarUrl', 'replyTo', 'text', 'createdAt', 'expireAt']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.authorId == request.auth.uid &&
+        isValidUsernameStr(data.authorUsername) &&
+        data.authorEmail is string && data.authorEmail.size() <= 256 &&
+        data.text is string && data.text.size() > 0 && data.text.size() <= 10000 &&
+        (!('authorAvatarUrl' in data) || (data.authorAvatarUrl is string && data.authorAvatarUrl.size() <= 250000)) &&
+        (!('replyTo' in data) || (
+          data.replyTo is map &&
+          data.replyTo.keys().hasAll(['id', 'authorUsername', 'text']) &&
+          data.replyTo.id is string &&
+          data.replyTo.authorUsername is string &&
+          data.replyTo.text is string
+        ));
+    }
+
+    // --- Users Collection ---
+    match /users/{userId} {
+      // Any authenticated user can read their own profile, or approved members / admins can read user list
+      allow get: if isSignedIn() && (isUser(userId) || isApprovedUser() || isAdmin());
+      allow list: if isSignedIn() && (isApprovedUser() || isAdmin());
+
+      // Create: User creates their own document
+      allow create: if isUser(userId) &&
+        isValidUserDoc(request.resource.data) &&
+        request.resource.data.id == request.auth.uid &&
+        // Admin auto-approval or regular user starting as 'none' or 'pending'
+        (
+          (request.auth.token.email == '33liiim@gmail.com' && request.resource.data.role == 'admin' && request.resource.data.status == 'approved') ||
+          (request.resource.data.role == 'member' && request.resource.data.status in ['none', 'pending'])
+        );
+
+      // Update: Admin can update any status/role; regular user can update status (none->pending) or update profile/avatarUrl
+      allow update: if isValidUserDoc(request.resource.data) && (
+        isAdmin() ||
+        (
+          isUser(userId) &&
+          request.resource.data.id == resource.data.id &&
+          request.resource.data.email == resource.data.email &&
+          request.resource.data.username == resource.data.username &&
+          request.resource.data.role == resource.data.role &&
+          (
+            (resource.data.status == 'none' && request.resource.data.status == 'pending') ||
+            (request.resource.data.status == resource.data.status)
+          )
+        )
+      );
+
+      // Delete: only admin can delete users
+      allow delete: if isAdmin();
+    }
+
+    // --- Usernames Registry Collection ---
+    match /usernames/{username} {
+      // Allow public get so registering users can check username availability
+      allow get: if true;
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() &&
+        isValidUsernameStr(username) &&
+        request.resource.data.keys().hasAll(['uid', 'username', 'createdAt']) &&
+        request.resource.data.keys().hasOnly(['uid', 'username', 'createdAt']) &&
+        request.resource.data.uid == request.auth.uid &&
+        request.resource.data.username == username;
+      allow update: if false;
+      allow delete: if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
+    }
+
+    // --- Messages Collection ---
+    match /messages/{messageId} {
+      allow read: if isApprovedUser();
+      allow create: if isApprovedUser() &&
+        isValidId(messageId) &&
+        isValidMessageDoc(request.resource.data) &&
+        request.resource.data.id == messageId;
+      allow update: if false;
+      allow delete: if isAdmin() || (isApprovedUser() && resource.data.authorId == request.auth.uid);
+    }
+  }
+}

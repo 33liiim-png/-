@@ -1,0 +1,6 @@
+{
+  "name": "مجلس - دردشة جماعية فورية",
+  "description": "تطبيق محادثة جماعية فوري آمن بتصميم مستوحى من تيليجرام مع إدارة للأعضاء والمصادقة بالبريد",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

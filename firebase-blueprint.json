@@ -1,0 +1,145 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and membership status in Majlis",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "User unique identifier matching auth UID",
+          "maxLength": 128
+        },
+        "email": {
+          "type": "string",
+          "description": "User email address",
+          "maxLength": 256
+        },
+        "username": {
+          "type": "string",
+          "description": "Unique Arabic or alphanumeric display username",
+          "minLength": 3,
+          "maxLength": 20
+        },
+        "status": {
+          "type": "string",
+          "description": "Membership approval status",
+          "enum": ["none", "pending", "approved", "rejected"]
+        },
+        "role": {
+          "type": "string",
+          "description": "Access role in the system",
+          "enum": ["admin", "member"]
+        },
+        "avatarUrl": {
+          "type": "string",
+          "description": "Optional custom avatar image data URL or profile photo",
+          "maxLength": 150000
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Profile creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Profile update timestamp"
+        }
+      },
+      "required": ["id", "email", "username", "status", "role", "createdAt", "updatedAt"]
+    },
+    "Username": {
+      "title": "Username",
+      "description": "Reserved unique username mapped to user UID",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID owning this username",
+          "maxLength": 128
+        },
+        "username": {
+          "type": "string",
+          "description": "Normalized lowercase username",
+          "minLength": 3,
+          "maxLength": 20
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Reservation timestamp"
+        }
+      },
+      "required": ["uid", "username", "createdAt"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Real-time chat message in Majlis with 14-day TTL and reply support",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Message document ID",
+          "maxLength": 128
+        },
+        "authorId": {
+          "type": "string",
+          "description": "UID of the message author",
+          "maxLength": 128
+        },
+        "authorUsername": {
+          "type": "string",
+          "description": "Username of the message author",
+          "minLength": 3,
+          "maxLength": 20
+        },
+        "authorEmail": {
+          "type": "string",
+          "description": "Email of the message author",
+          "maxLength": 256
+        },
+        "authorAvatarUrl": {
+          "type": "string",
+          "description": "Optional author custom avatar photo",
+          "maxLength": 150000
+        },
+        "text": {
+          "type": "string",
+          "description": "Sanitized chat message text",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "replyTo": {
+          "type": "object",
+          "description": "Optional replied-to message metadata"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Message creation timestamp"
+        },
+        "expireAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Expiration timestamp for Cloud Firestore TTL (14 days after creation)"
+        }
+      },
+      "required": ["id", "authorId", "authorUsername", "authorEmail", "text", "createdAt", "expireAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile with status, membership role, and avatar"
+    },
+    "/usernames/{username}": {
+      "schema": "Username",
+      "description": "Unique username registry mapped to user ID"
+    },
+    "/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Group chat messages with 14-day TTL expiration and reply threads"
+    }
+  }
+}
