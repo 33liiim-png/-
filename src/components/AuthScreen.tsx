@@ -12,6 +12,7 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, OperationType, handleFirestoreError } from '../firebase';
 import { validateUsername } from '../utils/chatUtils';
 import { ADMIN_EMAIL } from '../types';
+import { AppLogo } from './AppLogo';
 import {
   MessageSquare,
   Mail,
@@ -93,7 +94,7 @@ export const AuthScreen: React.FC<{
       await signInWithPopup(auth, provider);
       // User signed in successfully, App.tsx will prompt for username if new
     } catch (err: any) {
-      console.warn('Google sign-in info:', err);
+      console.warn('Sign-in info:', err);
       if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
         setErrorMsg(getArabicAuthErrorMessage(err.code || err.message));
       }
@@ -252,30 +253,20 @@ export const AuthScreen: React.FC<{
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-[#0e1621] p-4 transition-colors duration-200">
-      {/* Top bar */}
-      <div className="w-full max-w-md mx-auto flex justify-center items-center py-2">
-        <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-full bg-[#2AABEE] text-white flex items-center justify-center font-bold text-xl shadow-md">
-            م
-          </div>
-          <span className="font-bold text-2xl tracking-tight text-white">مجلس</span>
-        </div>
-      </div>
-
+    <div className="min-h-[100dvh] flex flex-col justify-between bg-[#0e1621] p-3 sm:p-4 transition-colors duration-200">
       {/* Main card */}
-      <div className="w-full max-w-md mx-auto my-auto bg-[#17212b] rounded-3xl shadow-xl border border-slate-800/80 overflow-hidden transition-all duration-200">
+      <div className="w-full max-w-md mx-auto my-auto bg-[#17212b] rounded-3xl shadow-2xl border border-slate-800/80 overflow-hidden transition-all duration-200">
         {/* Header Banner */}
         <div className="bg-gradient-to-br from-[#2AABEE] to-[#229ED9] p-6 text-center text-white relative">
-          <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center shadow-inner">
-            <MessageSquare className="w-8 h-8 text-white" />
+          <div className="flex justify-center mb-3">
+            <AppLogo size="lg" className="shadow-lg" />
           </div>
-          <h1 className="text-2xl font-bold">مرحباً بك في مجلس</h1>
+          <h1 className="text-2xl font-bold">مرحباً بك</h1>
           <p className="text-white/90 text-sm mt-1">منصة الحوار والتواصل الجماعي الفوري</p>
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex border-b border-slate-200 dark:border-slate-800 text-sm font-semibold">
+        <div className="flex border-b border-slate-800 text-sm font-semibold">
           <button
             type="button"
             onClick={() => {
@@ -285,8 +276,8 @@ export const AuthScreen: React.FC<{
             }}
             className={`flex-1 py-3.5 text-center transition-colors border-b-2 cursor-pointer ${
               activeTab === 'login'
-                ? 'border-[#2AABEE] text-[#2AABEE] bg-[#2AABEE]/5 dark:bg-[#2AABEE]/10'
-                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                ? 'border-[#2AABEE] text-[#2AABEE] bg-[#2AABEE]/10'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             تسجيل الدخول
@@ -300,8 +291,8 @@ export const AuthScreen: React.FC<{
             }}
             className={`flex-1 py-3.5 text-center transition-colors border-b-2 cursor-pointer ${
               activeTab === 'signup'
-                ? 'border-[#2AABEE] text-[#2AABEE] bg-[#2AABEE]/5 dark:bg-[#2AABEE]/10'
-                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                ? 'border-[#2AABEE] text-[#2AABEE] bg-[#2AABEE]/10'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             حساب جديد
@@ -311,52 +302,37 @@ export const AuthScreen: React.FC<{
         {/* Content body */}
         <div className="p-6">
           {errorMsg && (
-            <div className="mb-4 p-3.5 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 text-red-600 dark:text-red-400 text-sm flex items-start gap-2.5">
+            <div className="mb-4 p-3.5 rounded-2xl bg-red-950/40 border border-red-900/60 text-red-400 text-sm flex items-start gap-2.5">
               <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
               <span className="leading-relaxed">{errorMsg}</span>
             </div>
           )}
 
           {isOpNotAllowed && (
-            <div className="mb-4 p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs leading-relaxed space-y-2">
-              <div className="font-bold flex items-center gap-1.5 text-sm text-amber-800 dark:text-amber-300">
+            <div className="mb-4 p-4 rounded-2xl bg-amber-950/40 border border-amber-800 text-amber-200 text-xs leading-relaxed space-y-2">
+              <div className="font-bold flex items-center gap-1.5 text-sm text-amber-300">
                 <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>تفعيل موفر البريد في Firebase Console:</span>
+                <span>تفعيل موفر تسجيل الدخول بالبريد:</span>
               </div>
               <p>
-                مشروع Firebase يحتاج لتفعيل موفر البريد لمرة واحدة من لوحة التحكم:
+                يرجى تفعيل موفر البريد الإلكتروني في إعدادات المصادقة الخاصة بالمشروع.
               </p>
-              <ol className="list-decimal list-inside space-y-1 text-slate-700 dark:text-slate-300 pr-1">
-                <li>افتح رابط إعدادات المصادقة في لوحة Firebase Console أدناه.</li>
-                <li>اضغط على <strong>Email/Password</strong> وقم بتفعيله ثم <strong>Save</strong>.</li>
-              </ol>
-              <div className="pt-1 flex flex-wrap gap-2">
-                <a
-                  href="https://console.firebase.google.com/project/gen-lang-client-0663743266/authentication/providers"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold transition-colors"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  <span>فتح إعدادات Firebase Console</span>
-                </a>
-              </div>
             </div>
           )}
 
           {successMsg && (
-            <div className="mb-4 p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 text-emerald-700 dark:text-emerald-300 text-sm flex items-start gap-2.5">
+            <div className="mb-4 p-3.5 rounded-2xl bg-emerald-950/40 border border-emerald-900/60 text-emerald-300 text-sm flex items-start gap-2.5">
               <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
               <span className="leading-relaxed">{successMsg}</span>
             </div>
           )}
 
-          {/* Quick Google Sign-In (Auto-configured & Ready) */}
+          {/* Quick Sign-In */}
           <button
             type="button"
             disabled={loading}
             onClick={handleGoogleSignIn}
-            className="w-full py-2.5 px-4 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#242f3d] hover:bg-slate-50 dark:hover:bg-[#2c3949] text-slate-800 dark:text-white font-medium text-sm transition-all shadow-xs flex items-center justify-center gap-2.5 mb-4 cursor-pointer"
+            className="w-full py-2.5 px-4 rounded-xl border border-slate-700 bg-[#242f3d] hover:bg-[#2c3949] text-white font-medium text-sm transition-all shadow-xs flex items-center justify-center gap-2.5 mb-4 cursor-pointer"
           >
             <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
               <path
@@ -376,20 +352,20 @@ export const AuthScreen: React.FC<{
                 d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
               />
             </svg>
-            <span>المتابعة عبر Google (دخول فوري مباشر)</span>
+            <span>المتابعة السريعة للحساب</span>
           </button>
 
           <div className="relative flex mb-4 items-center">
-            <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
-            <span className="shrink-0 mx-3 text-xs text-slate-400 dark:text-slate-500">أو بالبريد الإلكتروني</span>
-            <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
+            <div className="flex-grow border-t border-slate-800"></div>
+            <span className="shrink-0 mx-3 text-xs text-slate-400">أو بالبريد الإلكتروني</span>
+            <div className="flex-grow border-t border-slate-800"></div>
           </div>
 
           {/* Login Form */}
           {activeTab === 'login' && (
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                   البريد الإلكتروني
                 </label>
                 <div className="relative">
@@ -400,14 +376,14 @@ export const AuthScreen: React.FC<{
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@example.com"
-                    className="w-full px-4 py-2.5 pr-10 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-[#242f3d] text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2AABEE] focus:border-transparent transition-all text-sm text-left"
+                    className="w-full px-4 py-2.5 pr-10 rounded-xl border border-slate-700 bg-[#242f3d] text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2AABEE] focus:border-transparent transition-all text-sm text-left"
                   />
                   <Mail className="w-4 h-4 text-slate-400 absolute right-3.5 top-3 pointer-events-none" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                   كلمة المرور
                 </label>
                 <div className="relative">
@@ -418,14 +394,14 @@ export const AuthScreen: React.FC<{
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full px-10 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-[#242f3d] text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2AABEE] focus:border-transparent transition-all text-sm text-left"
+                    className="w-full px-10 py-2.5 rounded-xl border border-slate-700 bg-[#242f3d] text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2AABEE] focus:border-transparent transition-all text-sm text-left"
                   />
                   <Lock className="w-4 h-4 text-slate-400 absolute right-3.5 top-3 pointer-events-none" />
                   <button
                     type="button"
                     onClick={() => setShowPassword((p) => !p)}
                     aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
-                    className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 absolute left-3 top-2.5 transition-colors"
+                    className="p-1 text-slate-400 hover:text-slate-200 absolute left-3 top-2.5 transition-colors"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -494,7 +470,7 @@ export const AuthScreen: React.FC<{
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                   البريد الإلكتروني
                 </label>
                 <div className="relative">
@@ -505,14 +481,14 @@ export const AuthScreen: React.FC<{
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@example.com"
-                    className="w-full px-4 py-2.5 pr-10 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-[#242f3d] text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2AABEE] focus:border-transparent transition-all text-sm text-left"
+                    className="w-full px-4 py-2.5 pr-10 rounded-xl border border-slate-700 bg-[#242f3d] text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2AABEE] focus:border-transparent transition-all text-sm text-left"
                   />
                   <Mail className="w-4 h-4 text-slate-400 absolute right-3.5 top-3 pointer-events-none" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                   كلمة المرور (6 أحرف فأكثر)
                 </label>
                 <div className="relative">
@@ -524,14 +500,14 @@ export const AuthScreen: React.FC<{
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
                     minLength={6}
-                    className="w-full px-10 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-[#242f3d] text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2AABEE] focus:border-transparent transition-all text-sm text-left"
+                    className="w-full px-10 py-2.5 rounded-xl border border-slate-700 bg-[#242f3d] text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2AABEE] focus:border-transparent transition-all text-sm text-left"
                   />
                   <Lock className="w-4 h-4 text-slate-400 absolute right-3.5 top-3 pointer-events-none" />
                   <button
                     type="button"
                     onClick={() => setShowSignupPassword((p) => !p)}
                     aria-label={showSignupPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
-                    className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 absolute left-3 top-2.5 transition-colors"
+                    className="p-1 text-slate-400 hover:text-slate-200 absolute left-3 top-2.5 transition-colors"
                   >
                     {showSignupPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -551,12 +527,12 @@ export const AuthScreen: React.FC<{
           {/* Passwordless Email Link Form */}
           {activeTab === 'link' && (
             <form onSubmit={handleSendEmailLink} className="space-y-4">
-              <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-xl text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+              <div className="p-3 bg-blue-950/40 border border-blue-900/60 rounded-xl text-xs text-blue-300 leading-relaxed">
                 أدخل بريدك الإلكتروني وسنرسل لك رابطاً سحرياً لتسجيل الدخول الفوري دون الحاجة لكلمة مرور.
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                   البريد الإلكتروني
                 </label>
                 <div className="relative">
@@ -567,7 +543,7 @@ export const AuthScreen: React.FC<{
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@example.com"
-                    className="w-full px-4 py-2.5 pr-10 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-[#242f3d] text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2AABEE] focus:border-transparent transition-all text-sm text-left"
+                    className="w-full px-4 py-2.5 pr-10 rounded-xl border border-slate-700 bg-[#242f3d] text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2AABEE] focus:border-transparent transition-all text-sm text-left"
                   />
                   <Mail className="w-4 h-4 text-slate-400 absolute right-3.5 top-3 pointer-events-none" />
                 </div>

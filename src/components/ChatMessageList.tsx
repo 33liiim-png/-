@@ -7,12 +7,13 @@ import {
   formatArabicDateSeparator,
   formatArabicTime,
 } from '../utils/chatUtils';
-import { Trash2, ArrowDown, CheckCheck, Loader2, Reply } from 'lucide-react';
+import { Trash2, ArrowDown, Check, CheckCheck, Loader2, Reply, Eye, X, Users } from 'lucide-react';
 import { doc, deleteDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 
 interface ChatMessageListProps {
   messages: ChatMessage[];
+  usersMap?: Record<string, { username: string; displayName?: string; avatarUrl?: string }>;
   loadingEarlier: boolean;
   hasMoreEarlier: boolean;
   onLoadMore: () => void;
@@ -21,6 +22,7 @@ interface ChatMessageListProps {
 
 export const ChatMessageList: React.FC<ChatMessageListProps> = ({
   messages,
+  usersMap,
   loadingEarlier,
   hasMoreEarlier,
   onLoadMore,
@@ -32,6 +34,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [isUserScrolledUp, setIsUserScrolledUp] = useState(false);
   const [highlightedMsgId, setHighlightedMsgId] = useState<string | null>(null);
+  const [selectedReceiptMsg, setSelectedReceiptMsg] = useState<ChatMessage | null>(null);
   const prevMessagesLength = useRef(messages.length);
 
   // Detect scroll position
@@ -88,14 +91,15 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
     <div
       ref={scrollContainerRef}
       onScroll={handleScroll}
-      className="flex-1 overflow-y-auto px-3 sm:px-6 py-4 bg-[#0E1621] space-y-3 relative transition-colors duration-200"
+      className="flex-1 overflow-y-auto px-2 sm:px-4 md:px-6 py-3 sm:py-4 bg-[#0E1621] relative transition-colors duration-200"
       style={{
         backgroundImage: `radial-gradient(circle at center, rgba(42, 171, 238, 0.03) 0%, transparent 70%)`,
       }}
     >
-      {/* Load More Button */}
-      {hasMoreEarlier && (
-        <div className="flex justify-center my-2">
+      <div className="max-w-4xl mx-auto w-full flex flex-col space-y-3">
+        {/* Load More Button */}
+        {hasMoreEarlier && (
+          <div className="flex justify-center my-2">
           <button
             type="button"
             onClick={onLoadMore}
@@ -151,8 +155,15 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
           lastDateLabel = dateLabel;
         }
 
-        const userColor = getUserColor(msg.authorUsername);
-        const avatarInitial = getAvatarInitial(msg.authorUsername);
+        // Resolve latest avatar, username & displayName from usersMap if available, fallback to message doc
+        const user = usersMap?.[msg.authorId];
+        const authorAvatarUrl = user?.avatarUrl || msg.authorAvatarUrl;
+        const authorUsername = user?.username || msg.authorUsername;
+        const authorDisplayName = user?.displayName || msg.authorDisplayName;
+        const displayNameToRender = authorDisplayName?.trim() || authorUsername;
+
+        const userColor = getUserColor(authorUsername);
+        const avatarInitial = getAvatarInitial(displayNameToRender);
         const timeStr = formatArabicTime(messageDate);
 
         // Check if next message is by the same author
@@ -177,6 +188,37 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                 isMine ? 'flex-row justify-start' : 'flex-row-reverse justify-end'
               } ${isHighlighted ? 'scale-[1.02]' : ''}`}
             >
+              {/* For Current User: Avatar on outer side */}
+              {isMine && (
+                <div className="w-8 shrink-0 mb-0.5">
+                  {isLastInGroup ? (
+                    <div
+                      className="w-8 h-8 rounded-full overflow-hidden relative flex items-center justify-center font-bold text-xs text-white shadow-2xs border border-white/10 bg-[#242f3d]"
+                      title={`أنت (${displayNameToRender} @${authorUsername})`}
+                    >
+                      <div
+                        className="w-full h-full flex items-center justify-center"
+                        style={{ backgroundColor: userColor.bg }}
+                      >
+                        {avatarInitial}
+                      </div>
+                      {authorAvatarUrl && (
+                        <img
+                          src={authorAvatarUrl}
+                          alt={displayNameToRender}
+                          className="absolute inset-0 w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                      )}
+                    </div>
+                  ) : (
+                    <div className="w-8" />
+                  )}
+                </div>
+              )}
+
               {/* Message Bubble Container */}
               <div
                 className={`relative max-w-[85%] sm:max-w-[70%] md:max-w-[60%] rounded-2xl px-3.5 py-2 text-sm shadow-xs transition-all ${
@@ -192,10 +234,15 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                 {/* Author Name for Other's message */}
                 {!isMine && (
                   <div
-                    className="font-bold text-xs mb-1"
+                    className="font-bold text-xs mb-1 flex items-center gap-1.5 flex-wrap"
                     style={{ color: userColor.nameColor }}
                   >
-                    {msg.authorUsername}
+                    <span>{displayNameToRender}</span>
+                    {authorDisplayName?.trim() && (
+                      <span className="text-[10px] text-slate-400 font-mono dir-ltr font-normal">
+                        @{authorUsername}
+                      </span>
+                    )}
                   </div>
                 )}
 
@@ -216,7 +263,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                       }`}
                     >
                       <Reply className="w-3 h-3 rotate-180" />
-                      <span>{msg.replyTo.authorUsername}</span>
+                      <span>{msg.replyTo.authorDisplayName || msg.replyTo.authorUsername}</span>
                     </div>
                     <div className="text-[11.5px] truncate opacity-85 leading-tight mt-0.5">
                       {msg.replyTo.text}
@@ -265,7 +312,53 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
 
                   <span>{timeStr}</span>
 
-                  {isMine && <CheckCheck className="w-3.5 h-3.5 text-white/90" />}
+                  {/* Read Receipts Indicator (Single check for sent, double check for read by others) */}
+                  {isMine && (() => {
+                    const otherReaders = (msg.readBy || []).filter((uid) => uid !== currentUser?.uid);
+                    const isReadByOthers = otherReaders.length > 0;
+
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (otherReaders.length > 0) {
+                            setSelectedReceiptMsg(msg);
+                          }
+                        }}
+                        disabled={!isReadByOthers}
+                        title={
+                          isReadByOthers
+                            ? `تمت القراءة من قِبل ${otherReaders.length} ${
+                                otherReaders.length === 1 ? 'عضو' : 'أعضاء'
+                              } (انقر لعرض التفاصيل)`
+                            : 'تم الإرسال (في انتظار قراءة الأعضاء)'
+                        }
+                        aria-label={
+                          isReadByOthers
+                            ? `تمت القراءة بواسطة ${otherReaders.length} أعضاء`
+                            : 'تم الإرسال'
+                        }
+                        className={`inline-flex items-center gap-0.5 transition-all select-none ${
+                          isReadByOthers
+                            ? 'cursor-pointer hover:opacity-100 opacity-95 text-sky-200 hover:scale-110 active:scale-95'
+                            : 'cursor-default opacity-60 text-white'
+                        }`}
+                      >
+                        {isReadByOthers ? (
+                          <>
+                            <CheckCheck className="w-3.5 h-3.5 text-sky-200" />
+                            {otherReaders.length > 1 && (
+                              <span className="text-[9px] font-bold text-sky-100 font-mono">
+                                {otherReaders.length}
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <Check className="w-3.5 h-3.5 text-white/80" />
+                        )}
+                      </button>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -274,22 +367,24 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                 <div className="w-8 shrink-0 mb-0.5">
                   {isLastInGroup ? (
                     <div
-                      className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center font-bold text-xs text-white shadow-2xs border border-white/10 bg-[#242f3d]"
-                      title={msg.authorUsername}
+                      className="w-8 h-8 rounded-full overflow-hidden relative flex items-center justify-center font-bold text-xs text-white shadow-2xs border border-white/10 bg-[#242f3d]"
+                      title={`@${authorUsername}`}
                     >
-                      {msg.authorAvatarUrl ? (
+                      <div
+                        className="w-full h-full flex items-center justify-center"
+                        style={{ backgroundColor: userColor.bg }}
+                      >
+                        {avatarInitial}
+                      </div>
+                      {authorAvatarUrl && (
                         <img
-                          src={msg.authorAvatarUrl}
-                          alt={msg.authorUsername}
-                          className="w-full h-full object-cover"
+                          src={authorAvatarUrl}
+                          alt={authorUsername}
+                          className="absolute inset-0 w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLElement).style.display = 'none';
+                          }}
                         />
-                      ) : (
-                        <div
-                          className="w-full h-full flex items-center justify-center"
-                          style={{ backgroundColor: userColor.bg }}
-                        >
-                          {avatarInitial}
-                        </div>
                       )}
                     </div>
                   ) : (
@@ -302,7 +397,8 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
         );
       })}
 
-      <div ref={bottomMarkerRef} className="h-2" />
+        <div ref={bottomMarkerRef} className="h-2" />
+      </div>
 
       {/* Floating Scroll to Bottom Button */}
       {showScrollBottom && (
@@ -310,11 +406,131 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
           type="button"
           onClick={scrollToBottom}
           aria-label="الانتقال لآخر الرسائل"
-          className="fixed bottom-20 left-6 sm:left-8 z-30 p-2.5 rounded-full bg-[#17212b] text-[#2AABEE] shadow-lg border border-slate-800 hover:scale-105 active:scale-95 transition-all cursor-pointer animate-in fade-in zoom-in-75"
+          className="fixed bottom-24 left-4 sm:left-8 z-30 min-w-[44px] min-h-[44px] p-2.5 rounded-full bg-[#17212b] text-[#2AABEE] shadow-xl border border-slate-700/80 hover:scale-105 active:scale-95 transition-all cursor-pointer animate-in fade-in zoom-in-75 flex items-center justify-center"
         >
           <ArrowDown className="w-5 h-5" />
         </button>
       )}
+
+      {/* Read Receipts Details Modal */}
+      {selectedReceiptMsg && (() => {
+        const readerIds = (selectedReceiptMsg.readBy || []).filter((id) => id !== currentUser?.uid);
+
+        return (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
+            onClick={() => setSelectedReceiptMsg(null)}
+          >
+            <div
+              className="w-full max-w-md bg-[#17212b] rounded-3xl border border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-150 text-right"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-9 h-9 rounded-full bg-[#2AABEE]/15 flex items-center justify-center text-[#2AABEE]">
+                    <CheckCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm text-white">تفاصيل المشاهدة</h3>
+                    <p className="text-xs text-slate-400">
+                      {readerIds.length === 1 ? 'عضو واحد قرأ الرسالة' : `${readerIds.length} أعضاء قرأوا الرسالة`}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedReceiptMsg(null)}
+                  className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  aria-label="إغلاق"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Message Quote Preview */}
+              <div className="p-3.5 mx-4 mt-3 bg-[#242f3d]/60 rounded-xl border border-slate-700/50">
+                <div className="text-[11px] text-slate-400 mb-1 flex items-center gap-1">
+                  <span>الرسالة:</span>
+                </div>
+                <p className="text-xs text-slate-200 line-clamp-2 leading-relaxed">
+                  {selectedReceiptMsg.text}
+                </p>
+              </div>
+
+              {/* Readers List */}
+              <div className="p-4 overflow-y-auto space-y-2 flex-1">
+                {readerIds.length === 0 ? (
+                  <div className="py-8 text-center text-slate-400 text-xs">
+                    لم يقم أي عضو بقراءة الرسالة بعد
+                  </div>
+                ) : (
+                  readerIds.map((uid) => {
+                    const readerInfo = usersMap?.[uid];
+                    const username = readerInfo?.username || 'عضو';
+                    const displayName = readerInfo?.displayName?.trim() || username;
+                    const avatarUrl = readerInfo?.avatarUrl;
+                    const color = getUserColor(username);
+                    const initial = getAvatarInitial(displayName);
+
+                    return (
+                      <div
+                        key={uid}
+                        className="flex items-center justify-between p-2.5 rounded-xl bg-[#242f3d]/50 border border-slate-800/80 hover:bg-[#242f3d] transition-colors"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          {/* Avatar */}
+                          <div
+                            className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center font-bold text-xs text-white shrink-0 shadow-xs border border-white/10"
+                            style={{ backgroundColor: color.bg }}
+                          >
+                            {avatarUrl ? (
+                              <img
+                                src={avatarUrl}
+                                alt={displayName}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              initial
+                            )}
+                          </div>
+
+                          {/* Names */}
+                          <div>
+                            <div className="font-semibold text-xs text-white">
+                              {displayName}
+                            </div>
+                            <div className="text-[11px] text-slate-400 font-mono dir-ltr text-right">
+                              @{username}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Read badge */}
+                        <div className="flex items-center gap-1 text-[11px] font-semibold text-[#2AABEE] px-2 py-0.5 rounded-full bg-[#2AABEE]/10">
+                          <CheckCheck className="w-3.5 h-3.5" />
+                          <span>تمت القراءة</span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="p-3 border-t border-slate-800 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setSelectedReceiptMsg(null)}
+                  className="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold cursor-pointer transition-colors"
+                >
+                  إغلاق
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };

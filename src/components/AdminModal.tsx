@@ -116,7 +116,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50">
-      <div className="bg-white dark:bg-[#17212b] rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-800 text-right overflow-hidden transition-all">
+      <div className="bg-white dark:bg-[#17212b] rounded-3xl max-w-2xl w-full max-h-[90dvh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-800 text-right overflow-hidden transition-all">
         {/* Header */}
         <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-[#242f3d]">
           <div className="flex items-center gap-3">
@@ -242,11 +242,11 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
                               )}
                             </div>
                             <div>
-                              <div className="font-bold text-sm text-slate-900 dark:text-white">
-                                {user.username}
+                              <div className="font-bold text-sm text-white">
+                                {user.displayName || user.username}
                               </div>
-                              <div className="text-xs text-slate-400 dir-ltr text-right">
-                                {user.email}
+                              <div className="text-xs text-slate-400 font-mono dir-ltr text-right">
+                                @{user.username}
                               </div>
                             </div>
                           </div>
@@ -315,11 +315,11 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
                               )}
                             </div>
                             <div>
-                              <div className="font-bold text-sm text-slate-900 dark:text-white">
-                                {user.username}
+                              <div className="font-bold text-sm text-white">
+                                {user.displayName || user.username}
                               </div>
-                              <div className="text-xs text-slate-400 dir-ltr text-right">
-                                {user.email}
+                              <div className="text-xs text-slate-400 font-mono dir-ltr text-right">
+                                @{user.username}
                               </div>
                             </div>
                           </div>
@@ -382,11 +382,11 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
                               )}
                             </div>
                             <div>
-                              <div className="font-bold text-sm text-slate-900 dark:text-white">
-                                {user.username}
+                              <div className="font-bold text-sm text-white">
+                                {user.displayName || user.username}
                               </div>
-                              <div className="text-xs text-slate-400 dir-ltr text-right">
-                                {user.email}
+                              <div className="text-xs text-slate-400 font-mono dir-ltr text-right">
+                                @{user.username}
                               </div>
                             </div>
                           </div>

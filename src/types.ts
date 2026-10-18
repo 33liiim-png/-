@@ -5,6 +5,7 @@ export interface UserProfile {
   id: string;
   email: string;
   username: string;
+  displayName?: string;
   status: UserStatus;
   role: UserRole;
   avatarUrl?: string;
@@ -15,6 +16,7 @@ export interface UserProfile {
 export interface MessageReplyInfo {
   id: string;
   authorUsername: string;
+  authorDisplayName?: string;
   text: string;
 }
 
@@ -22,10 +24,12 @@ export interface ChatMessage {
   id: string;
   authorId: string;
   authorUsername: string;
+  authorDisplayName?: string;
   authorEmail: string;
   authorAvatarUrl?: string;
   text: string;
   replyTo?: MessageReplyInfo;
+  readBy?: string[];
   createdAt: any;
   expireAt: any;
 }

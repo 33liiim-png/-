@@ -44,10 +44,11 @@ service cloud.firestore {
 
     function isValidUserDoc(data) {
       return data.keys().hasAll(['id', 'email', 'username', 'status', 'role', 'createdAt', 'updatedAt']) &&
-        data.keys().hasOnly(['id', 'email', 'username', 'status', 'role', 'avatarUrl', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'email', 'username', 'displayName', 'status', 'role', 'avatarUrl', 'createdAt', 'updatedAt']) &&
         data.id is string && data.id.size() <= 128 &&
         data.email is string && data.email.size() <= 256 &&
         isValidUsernameStr(data.username) &&
+        (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 100)) &&
         data.status in ['none', 'pending', 'approved', 'rejected'] &&
         data.role in ['admin', 'member'] &&
         (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 250000));
@@ -55,13 +56,15 @@ service cloud.firestore {
 
     function isValidMessageDoc(data) {
       return data.keys().hasAll(['id', 'authorId', 'authorUsername', 'authorEmail', 'text', 'createdAt', 'expireAt']) &&
-        data.keys().hasOnly(['id', 'authorId', 'authorUsername', 'authorEmail', 'authorAvatarUrl', 'replyTo', 'text', 'createdAt', 'expireAt']) &&
+        data.keys().hasOnly(['id', 'authorId', 'authorUsername', 'authorDisplayName', 'authorEmail', 'authorAvatarUrl', 'replyTo', 'text', 'createdAt', 'expireAt', 'readBy']) &&
         data.id is string && data.id.size() <= 128 &&
         data.authorId == request.auth.uid &&
         isValidUsernameStr(data.authorUsername) &&
+        (!('authorDisplayName' in data) || (data.authorDisplayName is string && data.authorDisplayName.size() <= 100)) &&
         data.authorEmail is string && data.authorEmail.size() <= 256 &&
         data.text is string && data.text.size() > 0 && data.text.size() <= 10000 &&
         (!('authorAvatarUrl' in data) || (data.authorAvatarUrl is string && data.authorAvatarUrl.size() <= 250000)) &&
+        (!('readBy' in data) || (data.readBy is list && data.readBy.size() <= 500)) &&
         (!('replyTo' in data) || (
           data.replyTo is map &&
           data.replyTo.keys().hasAll(['id', 'authorUsername', 'text']) &&
@@ -129,7 +132,19 @@ service cloud.firestore {
         isValidId(messageId) &&
         isValidMessageDoc(request.resource.data) &&
         request.resource.data.id == messageId;
-      allow update: if false;
+      allow update: if isApprovedUser() &&
+        // Message core fields cannot be altered
+        request.resource.data.id == resource.data.id &&
+        request.resource.data.authorId == resource.data.authorId &&
+        request.resource.data.authorUsername == resource.data.authorUsername &&
+        request.resource.data.authorEmail == resource.data.authorEmail &&
+        request.resource.data.text == resource.data.text &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        request.resource.data.expireAt == resource.data.expireAt &&
+        // Only read receipts can be updated
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy']) &&
+        request.resource.data.readBy is list &&
+        request.resource.data.readBy.size() <= 500;
       allow delete: if isAdmin() || (isApprovedUser() && resource.data.authorId == request.auth.uid);
     }
   }

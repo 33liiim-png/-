@@ -31,6 +31,7 @@ interface AuthContextType {
   createProfileWithUsername: (username: string) => Promise<void>;
   refreshProfile: () => Promise<void>;
   updateAvatar: (avatarUrl: string | null) => Promise<boolean>;
+  updateDisplayName: (displayName: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -123,7 +124,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // 2. Create user profile
     const userDocRef = doc(db, 'users', currentUser.uid);
-    const newProfile = {
+    const newProfile: Record<string, any> = {
       id: currentUser.uid,
       email: currentUser.email || '',
       username: cleanUsername,
@@ -132,6 +133,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
+
+    if (currentUser.photoURL) {
+      newProfile.avatarUrl = currentUser.photoURL;
+    }
 
     try {
       await setDoc(userDocRef, newProfile);
@@ -174,6 +179,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateDisplayName = async (displayName: string): Promise<boolean> => {
+    if (!currentUser || !userProfile) return false;
+    const userDocRef = doc(db, 'users', currentUser.uid);
+    try {
+      await updateDoc(userDocRef, {
+        displayName: displayName.trim(),
+        updatedAt: serverTimestamp(),
+      });
+      return true;
+    } catch (error) {
+      console.error('Update display name error:', error);
+      handleFirestoreError(error, OperationType.UPDATE, `users/${currentUser.uid}`);
+      return false;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -187,6 +208,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         createProfileWithUsername,
         refreshProfile,
         updateAvatar,
+        updateDisplayName,
       }}
     >
       {children}

@@ -3,6 +3,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { validateUsername } from '../utils/chatUtils';
 import { User, AlertCircle, Loader2 } from 'lucide-react';
+import { AppLogo } from './AppLogo';
 
 interface UsernameModalProps {
   onChooseUsername: (username: string) => Promise<void>;
@@ -45,19 +46,19 @@ export const UsernameModal: React.FC<UsernameModalProps> = ({ onChooseUsername }
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-[#17212b] rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 text-right">
-        <div className="w-12 h-12 rounded-full bg-[#2AABEE]/15 text-[#2AABEE] flex items-center justify-center mx-auto mb-3">
-          <User className="w-6 h-6" />
+      <div className="bg-[#17212b] rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-800 text-right">
+        <div className="flex justify-center mb-3">
+          <AppLogo size="md" withGlow />
         </div>
-        <h3 className="font-bold text-lg text-slate-900 dark:text-white text-center mb-1">
+        <h3 className="font-bold text-lg text-white text-center mb-1">
           اختر اسم المستخدم
         </h3>
-        <p className="text-xs text-slate-500 dark:text-slate-400 text-center mb-4 leading-relaxed">
+        <p className="text-xs text-slate-400 text-center mb-4 leading-relaxed">
           أهلاً بك في مجلس! للبدء، يرجى اختيار اسم مستخدم فريد سيظهر للأعضاء الآخرين في المحادثة.
         </p>
 
         {errorMsg && (
-          <div className="mb-3 p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 text-xs flex items-start gap-2">
+          <div className="mb-3 p-3 rounded-xl bg-red-950/40 border border-red-900 text-red-400 text-xs flex items-start gap-2">
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
             <span>{errorMsg}</span>
           </div>
